@@ -99,11 +99,5 @@ app.post('/kasus', (req, res) => {
     });
 });
 
-
-// =================================================================
-// TAHAP 5: JALANKAN SERVER API
-// =================================================================
-const PORT = 3000; // API akan jalan di port 3000
-app.listen(PORT, () => {
-    console.log(`\n>>> API Server siap diakses di http://localhost:${PORT}`);
-}); 
+// TAMBAHKAN BARIS INI SEBAGAI PENGGANTINYA
+module.exports = app;

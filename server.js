@@ -25,7 +25,7 @@ const db = mysql.createConnection({
     host: 'localhost',          // Biasanya 'localhost' kalau database di komputer yang sama
     user: 'root',               // Username MySQL lu, defaultnya seringkali 'root'
     password: '',    // GANTI DENGAN PASSWORD MYSQL LU
-    database: 'dashboard_mr01'     // GANTI DENGAN NAMA DATABASE LU
+    database: 'dashboard_mr01',     // GANTI DENGAN NAMA DATABASE LU
     port: DB_PORT
     ssl: {
         rejectUnauthorized: true // Ini wajib untuk Aiven

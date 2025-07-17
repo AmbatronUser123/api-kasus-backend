@@ -9,7 +9,7 @@ async function getDbConnection() {
     const config = {
       host: process.env.DB_HOST || 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com',
       user: process.env.DB_USER || '216M7Ghae2SDx7i.root',
-      password: process.env.DB_PASSWORD || '98Pu6ZxTr7LKn7UF',
+      password: process.env.DB_PASSWORD || '8lBTYhMWb0okYREe',
       port: process.env.DB_PORT || 4000,
       database: process.env.DB_NAME || 'test',
       ssl: {

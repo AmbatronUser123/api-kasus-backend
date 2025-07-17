@@ -12,7 +12,7 @@ console.log('====================');
 const express = require('express');
 
 // Pastikan path ke file db.js ini sudah benar
-const getDbConnection = require('./db.'); 
+const getDbConnection = require('./db'); 
 
 const app = express();
 const PORT = process.env.PORT || 3000;

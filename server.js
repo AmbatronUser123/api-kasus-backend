@@ -22,11 +22,11 @@ app.use(express.json());
 // =================================================================
 // Ganti bagian ini dengan data koneksi MySQL lu sendiri
 const db = mysql.createConnection({
-    host: 'localhost',          // Biasanya 'localhost' kalau database di komputer yang sama
-    user: 'root',               // Username MySQL lu, defaultnya seringkali 'root'
-    password: '',    // GANTI DENGAN PASSWORD MYSQL LU
-    database: 'dashboard_mr01',     // GANTI DENGAN NAMA DATABASE LU
-    port: DB_PORT,
+    host: process.env.localhost,          // Biasanya 'localhost' kalau database di komputer yang sama
+    user: process.env.root,               // Username MySQL lu, defaultnya seringkali 'root'
+    password: process.env. ,    // GANTI DENGAN PASSWORD MYSQL LU
+    database: process.env.db_kasus_mr,     // GANTI DENGAN NAMA DATABASE LU
+    port: process.env.3306,
     ssl: {
         rejectUnauthorized: true // Ini wajib untuk Aiven
       }  

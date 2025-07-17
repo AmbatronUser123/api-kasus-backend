@@ -1,103 +1,78 @@
-// =================================================================
-// TAHAP 1: IMPORT PERKAKAS YANG UDAH DI-INSTALL
-// =================================================================
+// server.js - Template untuk Vercel Serverless Function
+
+// 1. Impor semua yang dibutuhkan
+// Pastikan baris ini ada di paling atas untuk membaca file .env
+require('dotenv').config(); 
 const express = require('express');
-const mysql = require('mysql2');
-const cors = require('cors');
+const getDbConnection = require('./lib/db'); // Asumsi file db.js ada di folder /lib
 
-// =================================================================
-// TAHAP 2: INISIALISASI & KONFIGURASI DASAR
-// =================================================================
+// 2. Inisialisasi aplikasi Express
 const app = express();
+// Middleware untuk ngebolehin Express baca body dalam format JSON dari request
+app.use(express.json()); 
 
-// Gunakan 'cors' biar API bisa diakses dari mana aja (termasuk FlutterFlow)
-app.use(cors());
+// 3. DEFINISIKAN SEMUA RUTE (ROUTES) LU DI SINI
 
-// Gunakan 'express.json()' biar API kita ngerti cara baca data format JSON
-// yang nanti dikirim dari aplikasi FlutterFlow
-app.use(express.json());
-
-// =================================================================
-// TAHAP 3: KONFIGURASI KONEKSI KE DATABASE MYSQL
-// =================================================================
-// Ganti bagian ini dengan data koneksi MySQL lu sendiri
-const db = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    port: process.env.DB_PORT,
-    database: process.env.DB_NAME,
-  ssl: {
-    rejectUnauthorized: true
-      }  
+// Contoh rute selamat datang untuk halaman utama
+app.get('/', (req, res) => {
+  res.status(200).send('API Server is running! Koneksi ke database berhasil.');
 });
 
-// Cek koneksi ke database pas pertama kali API jalan
-db.connect(err => {
-    if (err) {
-        console.error('!!! KONEKSI KE DATABASE GAGAL !!!');
-        console.error(err);
-        return;
-    }
-    console.log('>>> Berhasil terkoneksi ke database MySQL.');
-});
+// Endpoint untuk MENAMBAH data kasus baru
+app.post('/kasus', async (req, res) => {
+  // Ambil data yang dikirim dari frontend (FlutterFlow)
+  const {
+    nomor_epid,
+    nama_kasus,
+    jenis_kelamin,
+    tgl_lahir, // Asumsi format YYYY-MM-DD
+    alamat,
+    kecamatan,
+    kelurahan
+  } = req.body;
 
-// =================================================================
-// TAHAP 4: BIKIN ENDPOINT (PINTU-PINTU API)
-// =================================================================
+  // Validasi sederhana (pastikan data penting ada)
+  if (!nomor_epid || !nama_kasus || !tgl_lahir) {
+    return res.status(400).json({ message: 'Error: nomor_epid, nama_kasus, dan tgl_lahir wajib diisi.' });
+  }
 
-// Pintu #1: GET /kasus -> Buat ambil SEMUA data kasus
-app.get('/kasus', (req, res) => {
-    const sql = "SELECT * FROM kasus_mr01";
-    db.query(sql, (err, data) => {
-        // Kalau ada error pas query, kirim pesan error
-        if (err) {
-            console.error("Error di GET /kasus:", err);
-            return res.status(500).json({ message: "Gagal mengambil data dari server." });
-        }
-        // Kalau berhasil, kirim semua datanya dalam format JSON
-        console.log("Sukses melayani GET /kasus");
-        return res.json(data);
-    });
-});
-
-// Pintu #2: POST /kasus -> Buat nyimpen SATU data kasus baru
-app.post('/kasus', (req, res) => {
-    // req.body berisi data JSON yang dikirim dari FlutterFlow
-    console.log("Menerima data baru:", req.body);
-    
-    // Ini cuma contoh beberapa kolom, lu harus lengkapin sesuai tabel lu
-    const { 
-        Kabupaten, 
-        Nomor_EPID, 
-        Nama_kasus,
-        Jenis_kelamin,
-        // ... LENGKAPI SEMUA KOLOM LAINNYA DI SINI
-        Keadaan_saat_ini 
-    } = req.body;
-
-    const sql = `INSERT INTO kasus_mr01 
-                 (Kabupaten, Nomor_EPID, Nama_kasus, Jenis_kelamin, Keadaan_saat_ini) 
-                 VALUES (?)`;
-    
+  try {
+    const db = await getDbConnection();
+    const sql = `
+      INSERT INTO data_mr01_serang 
+      (nomor_epid, nama_kasus, jenis_kelamin, tgl_lahir, alamat, kecamatan, kelurahan, keadaan_saat_ini) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+    `;
     const values = [
-        Kabupaten, 
-        Nomor_EPID,
-        Nama_kasus,
-        Jenis_kelamin,
-        // ... LENGKAPI SEMUA NILAI LAINNYA DI SINI SESUAI URUTAN
-        Keadaan_saat_ini
+      nomor_epid,
+      nama_kasus,
+      jenis_kelamin,
+      tgl_lahir,
+      alamat,
+      kecamatan,
+      kelurahan,
+      'Hidup' // Ngasih nilai default
     ];
 
-    db.query(sql, [values], (err, result) => {
-        if (err) {
-            console.error("Error di POST /kasus:", err);
-            return res.status(500).json({ message: "Gagal menyimpan data." });
-        }
-        console.log("Sukses menyimpan data baru dengan ID:", result.insertId);
-        return res.status(201).json({ message: "Data berhasil dibuat!", insertId: result.insertId });
+    const [result] = await db.query(sql, values);
+
+    res.status(201).json({ 
+      message: 'Data kasus baru berhasil dibuat!', 
+      insertedId: result.insertId 
     });
+
+  } catch (error) {
+    console.error('Gagal memasukkan data kasus baru:', error);
+    res.status(500).json({ message: 'Error: Gagal menyimpan data ke database.' });
+  }
 });
 
-// TAMBAHKAN BARIS INI SEBAGAI PENGGANTINYA
+// Nanti kalau lu mau bikin rute GET /kasus, POST /login, dll, taro di sini juga...
+// app.get('/kasus', ...)
+// app.post('/login', ...)
+
+
+// 4. EKSPOR APLIKASI EXPRESS-NYA
+// Vercel akan otomatis mengambil 'app' ini dan menjalankannya sebagai serverless function.
+// Kita TIDAK perlu `app.listen()`.
 module.exports = app;

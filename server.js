@@ -1,37 +1,50 @@
-// server.js - Template untuk Vercel Serverless Function
+require('dotenv').config();
 
-// 1. Impor semua yang dibutuhkan
-// Pastikan baris ini ada di paling atas untuk membaca file .env
-require('dotenv').config(); 
+// Debug environment variables
+console.log('=== DEBUG ENV VARS ===');
+console.log('DB_HOST:', process.env.DB_HOST);
+console.log('DB_USER:', process.env.DB_USER);
+console.log('DB_NAME:', process.env.DB_NAME);
+console.log('DB_PORT:', process.env.DB_PORT);
+console.log('====================');
+
 const express = require('express');
-const getDbConnection = require('./lib/db'); // Asumsi file db.js ada di folder /lib
 
-// 2. Inisialisasi aplikasi Express
+// Pastikan path ke file db.js ini sudah benar
+const getDbConnection = require('./db.js'); 
+
 const app = express();
-// Middleware untuk ngebolehin Express baca body dalam format JSON dari request
-app.use(express.json()); 
+const PORT = process.env.PORT || 3000;
 
-// 3. DEFINISIKAN SEMUA RUTE (ROUTES) LU DI SINI
+// Middleware untuk membaca body JSON
+app.use(express.json());
 
-// Contoh rute selamat datang untuk halaman utama
+// =================================
+// == SEMUA RUTE API TARO DI SINI ==
+// =================================
+
+// Rute utama untuk tes
 app.get('/', (req, res) => {
-  res.status(200).send('API Server is running! Koneksi ke database berhasil.');
+  res.send('API Server is running!');
 });
 
-// Endpoint untuk MENAMBAH data kasus baru
-app.post('/kasus', async (req, res) => {
-  // Ambil data yang dikirim dari frontend (FlutterFlow)
-  const {
-    nomor_epid,
-    nama_kasus,
-    jenis_kelamin,
-    tgl_lahir, // Asumsi format YYYY-MM-DD
-    alamat,
-    kecamatan,
-    kelurahan
-  } = req.body;
+// Rute untuk mengambil semua data kasus
+app.get('/kasus', async (req, res) => {
+  try {
+    const db = await getDbConnection();
+    const sql = "SELECT * FROM `data_mr01_serang` ORDER BY id DESC;";
+    const [rows] = await db.query(sql);
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error('Gagal mengambil data:', error);
+    res.status(500).json({ message: "Error: Gagal mengambil data dari database." });
+  }
+});
 
-  // Validasi sederhana (pastikan data penting ada)
+// Rute untuk menambah data kasus baru
+app.post('/kasus', async (req, res) => {
+  const { nomor_epid, nama_kasus, jenis_kelamin, tgl_lahir, alamat, kecamatan, kelurahan } = req.body;
+
   if (!nomor_epid || !nama_kasus || !tgl_lahir) {
     return res.status(400).json({ message: 'Error: nomor_epid, nama_kasus, dan tgl_lahir wajib diisi.' });
   }
@@ -43,36 +56,21 @@ app.post('/kasus', async (req, res) => {
       (nomor_epid, nama_kasus, jenis_kelamin, tgl_lahir, alamat, kecamatan, kelurahan, keadaan_saat_ini) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?);
     `;
-    const values = [
-      nomor_epid,
-      nama_kasus,
-      jenis_kelamin,
-      tgl_lahir,
-      alamat,
-      kecamatan,
-      kelurahan,
-      'Hidup' // Ngasih nilai default
-    ];
-
+    const values = [nomor_epid, nama_kasus, jenis_kelamin, tgl_lahir, alamat, kecamatan, kelurahan, 'Hidup'];
     const [result] = await db.query(sql, values);
-
     res.status(201).json({ 
       message: 'Data kasus baru berhasil dibuat!', 
       insertedId: result.insertId 
     });
-
   } catch (error) {
     console.error('Gagal memasukkan data kasus baru:', error);
     res.status(500).json({ message: 'Error: Gagal menyimpan data ke database.' });
   }
 });
 
-// Nanti kalau lu mau bikin rute GET /kasus, POST /login, dll, taro di sini juga...
-// app.get('/kasus', ...)
-// app.post('/login', ...)
-
-
-// 4. EKSPOR APLIKASI EXPRESS-NYA
-// Vercel akan otomatis mengambil 'app' ini dan menjalankannya sebagai serverless function.
-// Kita TIDAK perlu `app.listen()`.
-module.exports = app;
+// =================================
+// == JALANKAN SERVER ==
+// =================================
+app.listen(PORT, () => {
+  console.log(`>>> Server berhasil jalan di port ${PORT}`);
+});
